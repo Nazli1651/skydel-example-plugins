@@ -1,13 +1,6 @@
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
-find_package(
-  Qt5
-  COMPONENTS Network
-  REQUIRED)
-
 file(GLOB PLUGIN_WIDGETS_SRC *.cpp *.ui)
+
+qt5_add_resources(PLUGIN_WIDGETS_SRC resources/resources.qrc)
 
 add_library(plugin_widgets STATIC ${PLUGIN_WIDGETS_SRC})
 
