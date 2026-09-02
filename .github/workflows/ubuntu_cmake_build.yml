@@ -1,4 +1,4 @@
-name: Ubuntu CMake Build
+     name: Ubuntu CMake Build
 
 on:
   push:
@@ -48,19 +48,12 @@ jobs:
           mkdir -p $QT_TMP
           cd $QT_TMP
 
+          # Build qtbase
           git clone --branch v${{ env.QT_VERSION }}-lts-lgpl --single-branch https://github.com/qt/qtbase
           cd qtbase
-
           sed -i "0,/#ifdef __cplusplus/!b;//a#  include <limits>" src/corelib/global/qglobal.h
 
-          ./configure \
-            -prefix ${{ env.QT_PREFIX }} \
-            -xcb \
-            -opensource \
-            -confirm-license \
-            -nomake tests \
-            -nomake examples
-
+          ./configure -prefix ${{ env.QT_PREFIX }} -xcb -opensource -confirm-license -nomake tests -nomake examples
           make -j$(nproc)
           sudo make install
 
@@ -73,13 +66,19 @@ jobs:
           configure-options: >
             -G Ninja
             -DCMAKE_PREFIX_PATH=${{ env.QT_PREFIX }}
-          build-type: Release
+          build-type: Release 
 
-      - name: Upload GPS custom signal
+- name: Package Galileo E1 plugin
+        run: |
+          mkdir -p artifact
+          find "${{ runner.workspace }}/build" -type f -name "libcustom_e1.so" -exec cp {} artifact/ \;
+          cp source/custom_signals/example_galileo_e1/custom_e1.xml artifact/
+          cp source/custom_signals/example_galileo_e1/custom_e1_downlink.csv artifact/
+          echo "Files:"
+          ls -lh artifact
+
+      - name: Upload Galileo E1 plugin
         uses: actions/upload-artifact@v4
         with:
-          name: gps-custom-signal
-          path: |
-            **/libcustom_custom_ca.so
-            **/custom_custom_ca.xml
-            **/custom_custom_ca_downlink.csv
+          name: custom-e1-skydel-25-9
+          path: artifact/
