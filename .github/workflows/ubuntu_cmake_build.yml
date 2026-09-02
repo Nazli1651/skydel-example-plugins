@@ -1,22 +1,29 @@
-     name: Ubuntu CMake Build
-     on:
-     push:
-     branches: [master]
-     pull_request:
-     branches: [master]
-     workflow_dispatch:
-     
-     jobs:
-     build:
-     runs-on: ubuntu-22.04
-     
-     env:
+name: Ubuntu CMake Build
+
+on:
+  push:
+    branches:
+      - master
+      - skydel-25-9
+
+  pull_request:
+    branches:
+      - master
+      - skydel-25-9
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    env:
       QT_VERSION: 5.15.17
       QT_PREFIX: /opt/Qt/5.15.17/gcc_64
       QT_TMP: /tmp/qt-setup
       QT_CACHE_KEY: QT
-      
-      steps:
+
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -47,12 +54,24 @@
           mkdir -p $QT_TMP
           cd $QT_TMP
 
-          # Build qtbase
-          git clone --branch v${{ env.QT_VERSION }}-lts-lgpl --single-branch https://github.com/qt/qtbase
-          cd qtbase
-          sed -i "0,/#ifdef __cplusplus/!b;//a#  include <limits>" src/corelib/global/qglobal.h
+          git clone \
+            --branch v${{ env.QT_VERSION }}-lts-lgpl \
+            --single-branch \
+            https://github.com/qt/qtbase
 
-          ./configure -prefix ${{ env.QT_PREFIX }} -xcb -opensource -confirm-license -nomake tests -nomake examples
+          cd qtbase
+
+          sed -i "0,/#ifdef __cplusplus/!b;//a#  include <limits>" \
+            src/corelib/global/qglobal.h
+
+          ./configure \
+            -prefix ${{ env.QT_PREFIX }} \
+            -xcb \
+            -opensource \
+            -confirm-license \
+            -nomake tests \
+            -nomake examples
+
           make -j$(nproc)
           sudo make install
 
@@ -65,18 +84,30 @@
           configure-options: >
             -G Ninja
             -DCMAKE_PREFIX_PATH=${{ env.QT_PREFIX }}
-          build-type: Release 
-          
+          build-type: Release
+
       - name: Package GPS Custom C/A plugin
-      run: |
+        run: |
+          rm -rf artifact
           mkdir -p artifact
-          find "${{ runner.workspace }}/build" -type f -name "libcustom_custom_ca.so" -exec cp {} artifact/ \;
+
+          find "${{ runner.workspace }}/build" \
+            -type f \
+            -name "libcustom_custom_ca.so" \
+            -exec cp {} artifact/ \;
+
           cp source/custom_signals/example_custom_custom_ca/custom_custom_ca.xml artifact/
           cp source/custom_signals/example_custom_custom_ca/custom_custom_ca_downlink.csv artifact/
-          echo "Files:"
+
+          echo "Packaged files:"
           ls -lh artifact
-          - name: Upload GPS Custom C/A plugin
-          uses: actions/upload-artifact@v4
+
+          echo "Checking shared library:"
+          test -f artifact/libcustom_custom_ca.so
+
+      - name: Upload GPS Custom C/A plugin
+        uses: actions/upload-artifact@v4
         with:
-        name: custom-custom-ca-skydel-25-9
-        path: artifact/
+          name: custom-custom-ca-skydel-25-9
+          path: artifact/
+          if-no-files-found: error
