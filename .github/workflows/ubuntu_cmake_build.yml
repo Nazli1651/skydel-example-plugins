@@ -48,12 +48,19 @@ jobs:
           mkdir -p $QT_TMP
           cd $QT_TMP
 
-          # Build qtbase
           git clone --branch v${{ env.QT_VERSION }}-lts-lgpl --single-branch https://github.com/qt/qtbase
           cd qtbase
+
           sed -i "0,/#ifdef __cplusplus/!b;//a#  include <limits>" src/corelib/global/qglobal.h
 
-          ./configure -prefix ${{ env.QT_PREFIX }} -xcb -opensource -confirm-license -nomake tests -nomake examples
+          ./configure \
+            -prefix ${{ env.QT_PREFIX }} \
+            -xcb \
+            -opensource \
+            -confirm-license \
+            -nomake tests \
+            -nomake examples
+
           make -j$(nproc)
           sudo make install
 
@@ -67,82 +74,12 @@ jobs:
             -G Ninja
             -DCMAKE_PREFIX_PATH=${{ env.QT_PREFIX }}
           build-type: Release
-      
-name: Ubuntu CMake Build
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-
-    env:
-      QT_VERSION: 5.15.17
-      QT_PREFIX: /opt/Qt/5.15.17/gcc_64
-      QT_TMP: /tmp/qt-setup
-      QT_CACHE_KEY: QT
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install Build Dependencies
-        run: |
-          sudo sed -i "s/# deb-src/deb-src/" /etc/apt/sources.list
-          sudo apt-get update
-          sudo apt-get -y build-dep qtbase5-dev
-          sudo apt-get install -y \
-            build-essential \
-            libgl1-mesa-dev \
-            libxcb-xinerama0-dev \
-            uuid-dev \
-            git \
-            cmake \
-            ninja-build
-
-      - name: Cache Qt Build
-        id: qt-cache
-        uses: actions/cache@v3
-        with:
-          path: /opt/Qt/${{ env.QT_VERSION }}
-          key: ${{ runner.os }}-${{ env.QT_CACHE_KEY }}-${{ env.QT_VERSION }}
-
-      - name: Build and Install Qt (if not cached)
-        if: steps.qt-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p $QT_TMP
-          cd $QT_TMP
-
-          # Build qtbase
-          git clone --branch v${{ env.QT_VERSION }}-lts-lgpl --single-branch https://github.com/qt/qtbase
-          cd qtbase
-          sed -i "0,/#ifdef __cplusplus/!b;//a#  include <limits>" src/corelib/global/qglobal.h
-
-          ./configure -prefix ${{ env.QT_PREFIX }} -xcb -opensource -confirm-license -nomake tests -nomake examples
-          make -j$(nproc)
-          sudo make install
-
-      - name: Build with CMake
-        uses: ashutoshvarma/action-cmake-build@master
-        with:
-          build-dir: ${{ runner.workspace }}/build
-          cc: gcc
-          cxx: g++
-          configure-options: >
-            -G Ninja
-            -DCMAKE_PREFIX_PATH=${{ env.QT_PREFIX }}
-          build-type: Release
-      
       - name: Upload GPS custom signal
         uses: actions/upload-artifact@v4
         with:
-         name: gps-custom-signal
-         path: |
-          **/libcustom_ca.so
-          **/custom_ca.xml
-          **/custom_ca_downlink.csv
+          name: gps-custom-signal
+          path: |
+            **/libcustom_custom_ca.so
+            **/custom_custom_ca.xml
+            **/custom_custom_ca_downlink.csv
