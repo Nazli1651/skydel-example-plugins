@@ -67,3 +67,30 @@ jobs:
             -G Ninja
             -DCMAKE_PREFIX_PATH=${{ env.QT_PREFIX }}
           build-type: Release
+
+      - name: Package GPS C/A plugin
+        run: |
+          rm -rf artifact
+          mkdir -p artifact
+
+          find "${{ runner.workspace }}/build" \
+            -type f \
+            -name "libcustom_ca.so" \
+            -exec cp {} artifact/ \;
+
+          cp source/custom_signals/example_gps_ca/custom_ca.xml artifact/
+          cp source/custom_signals/example_gps_ca/custom_ca_downlink.csv artifact/
+
+          echo "Packaged files:"
+          ls -lh artifact
+
+          test -f artifact/libcustom_ca.so
+          test -f artifact/custom_ca.xml
+          test -f artifact/custom_ca_downlink.csv
+
+      - name: Upload GPS C/A plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-ca-skydel-25-9
+          path: artifact/
+          if-no-files-found: error
