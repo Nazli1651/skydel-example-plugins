@@ -1,0 +1,27 @@
+name: Create Skydel 25.9 Branch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch official v25-9-1 tag
+        run: |
+          git remote add upstream https://github.com/learn-safran-navigation-timing/skydel-example-plugins.git
+          git fetch upstream tag v25-9-1
+
+      - name: Create branch from v25-9-1
+        run: |
+          git checkout -b skydel-25-9-clean v25-9-1
+          git push origin skydel-25-9-clean
